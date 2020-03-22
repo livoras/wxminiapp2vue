@@ -1,0 +1,31 @@
+{
+  "name": "wxml2angular",
+  "version": "1.0.0",
+  "description": "Parser wxml to angular template",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/livoras/wxml2angular.git"
+  },
+  "keywords": [
+    "wxml",
+    "angular"
+  ],
+  "author": "Livoras",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/livoras/wxml2angular/issues"
+  },
+  "homepage": "https://github.com/livoras/wxml2angular#readme",
+  "dependencies": {
+    "@vivaxy/wxml": "^1.0.0",
+    "parse5": "^5.1.1"
+  },
+  "devDependencies": {
+    "@types/parse5": "^5.0.2",
+    "typescript": "^3.8.3"
+  }
+}
