@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "typeRoots": ["typings/wx"],
     "module": "commonjs",
     "target": "es2015"
   },
