@@ -34,7 +34,7 @@ interface IContext {
   ngTemplateCounter: number,
 }
 
-export const wxml2angular = (wxmlString: string): string => {
+export const convertWxmlToNgTemplate = (wxmlString: string): string => {
   const ast = parse(wxmlString) as any
   const ctx = { lines: [], ngTemplateCounter: 0 }
   const fragment: TreeNode[] = preprocessNodes(ast.childNodes[0].childNodes[1].childNodes, ctx)
@@ -140,4 +140,4 @@ const isElseOrIfElseNode = (node: TreeNode): boolean => {
   return node.isElse || node.isElseIf
 }
 
-console.log(wxml2angular(html))
+console.log(convertWxmlToNgTemplate(html))
