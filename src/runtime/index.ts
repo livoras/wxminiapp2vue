@@ -1,6 +1,15 @@
-export const Page = (page) => {
+let app
+
+const Page = (page) => {
+  console.log(page)
 }
 
-export const App = (app) => {
-
+const App = (appInstance) => {
+  console.log(appInstance)
 }
+
+const getApp = () => {
+  return app
+}
+
+export default { Page, App, getApp }
