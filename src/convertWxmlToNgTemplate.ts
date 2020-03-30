@@ -18,6 +18,7 @@ const html = `
   <view wx:for="{{items}}" wx:if="{{item.isShow}}">
     <span>{{item.name}}</span>
   </view>
+  <image src="{{item.avatarUrl}}" />
   <view wx:elif="{{item.isMyName}}">
     {{item.yourname}}
   </view>
@@ -91,7 +92,7 @@ export const wxmlFragment2angular = (fragment: TreeNode[], ctx: IContext) => {
 const parseWxmlNodeToAngularStartTag = (node: TreeNode): string => {
   const tagName = getTagNameByWxmlNode(node)
   const attrsStr = parseWxmlNodeToAttrsString(node)
-  return `${isElseOrIfElseNode(node) ? `<ng-template #${ELSE_BLOCK_TEMPLSTE_PREFIX}${node.templateId}${node.isElseIf ? ` *ngIf="${getIfElseAttr(node)}"` : ''}>` : ''}<${tagName} ${attrsStr}>`
+  return `<${tagName} ${attrsStr}>`
 }
 
 const getIfElseAttr = (node: TreeNode): string => {
@@ -99,7 +100,7 @@ const getIfElseAttr = (node: TreeNode): string => {
 }
 
 const getParsedWxmlEndTagName = (node: TreeNode): string => {
-  return `</${getTagNameByWxmlNode(node)}>${isElseOrIfElseNode(node) ? "</ng-template>" : ""}`
+  return `</${getTagNameByWxmlNode(node)}>`
 }
 
 const getTagNameByWxmlNode = (node: TreeNode) => {
@@ -116,12 +117,23 @@ const parseWxmlNodeToAttrsString = (node: TreeNode): string => {
 
 const parseWxmlAttrToAngularAttrStr = (attr: Attribute, node: TreeNode): string => {
   const n = attr.name
+  const v = stripDelimiters(attr.value)
   if (n === "wx:for") {
-    return `*ngFor="let item of ${stripDelimiters(attr.value)}"`
+    return `v-for="item in ${stripDelimiters(attr.value)}"`
   } else if (n === "wx:if") {
-    return `*ngIf="${getNgIfElseAttrValue(attr, node)}"`
+    return `v-if="${stripDelimiters(attr.value)}"`
+  } else if (n === "wx:elif") {
+    return `v-else-if="${stripDelimiters(attr.value)}"`
+  } else if (n === "wx:else") {
+    return `v-else`
+  } else if (n === "bindtap") {
+    return `v-touch:tap="${v}"`
+  } else if (n === "bindinput") {
+    return `v-on:input="${v}"`
+  } else if (n === "value") {
+    return `v-model="${v}"`
   }
-  return attr.value ? `${attr.name}=${attr.value}` : attr.name
+  return attr.value ? `${attr.name}="${attr.value}"` : attr.name
 } 
 
 const getNgIfElseAttrValue = (attr: Attribute, node: TreeNode): string => {
@@ -140,4 +152,4 @@ const isElseOrIfElseNode = (node: TreeNode): boolean => {
   return node.isElse || node.isElseIf
 }
 
-console.log(convertWxmlToNgTemplate(html))
+// console.log(convertWxmlToNgTemplate(html))
