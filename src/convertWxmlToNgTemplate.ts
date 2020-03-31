@@ -92,7 +92,16 @@ export const wxmlFragment2angular = (fragment: TreeNode[], ctx: IContext) => {
 const parseWxmlNodeToAngularStartTag = (node: TreeNode): string => {
   const tagName = getTagNameByWxmlNode(node)
   const attrsStr = parseWxmlNodeToAttrsString(node)
-  return `<${tagName} ${attrsStr}>`
+  const typeAttrStr = getTypeAttrStr(node.nodeName, tagName)
+  console.log(tagName, TAGS_MAP)
+  return `<${tagName} ${typeAttrStr} ${attrsStr}>`
+}
+
+const getTypeAttrStr = (originalNodeName, tagName) => {
+  if (originalNodeName === "checkbox") {
+    return `type="checkbox"`
+  }
+  return ""
 }
 
 const getIfElseAttr = (node: TreeNode): string => {
@@ -132,6 +141,8 @@ const parseWxmlAttrToAngularAttrStr = (attr: Attribute, node: TreeNode): string 
     return `v-on:input="${v}"`
   } else if (n === "value") {
     return `v-model="${v}"`
+  } else if (n === "bindchange") {
+    return `v-on:change="${v}"`
   }
   return attr.value ? `${attr.name}="${attr.value}"` : attr.name
 } 
