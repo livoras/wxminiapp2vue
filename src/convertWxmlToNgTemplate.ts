@@ -38,9 +38,18 @@ interface IContext {
 export const convertWxmlToNgTemplate = (wxmlString: string): string => {
   const ast = parse(wxmlString) as any
   const ctx = { lines: [], ngTemplateCounter: 0 }
-  const fragment: TreeNode[] = preprocessNodes(ast.childNodes[0].childNodes[1].childNodes, ctx)
+  const htmlNode = getHtmlNode(ast)
+  const fragment: TreeNode[] = preprocessNodes(htmlNode.childNodes[1].childNodes, ctx)
   wxmlFragment2angular(fragment, ctx)
   return ctx.lines.join("")
+}
+
+const getHtmlNode = (ast) => {
+  for (const node of ast.childNodes) {
+    if (node.nodeName === "html") {
+      return node
+    }
+  }
 }
 
 const preprocessNodes = (tree: TreeNode[], ctx: IContext): TreeNode[] => {
@@ -93,7 +102,6 @@ const parseWxmlNodeToAngularStartTag = (node: TreeNode): string => {
   const tagName = getTagNameByWxmlNode(node)
   const attrsStr = parseWxmlNodeToAttrsString(node)
   const typeAttrStr = getTypeAttrStr(node.nodeName, tagName)
-  console.log(tagName, TAGS_MAP)
   return `<${tagName} ${typeAttrStr} ${attrsStr}>`
 }
 
