@@ -15,6 +15,10 @@ interface IContext {
   ngTemplateCounter: number,
 }
 
+export const replaceAttrList: Set<string> = new Set([
+  "wx:for-item", "wx:for-index"
+])
+
 export const convertWxmlToVueTemplate = (wxmlString: string): string => {
   const ast = parse(wxmlString) as any
   const ctx = { lines: [], ngTemplateCounter: 0 }
@@ -115,11 +119,11 @@ const parseWxmlNodeToAttrsString = (node: TreeNode): string => {
 
 const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
   const n = attr.name
-  const attrsMap = node.attrsMap
   const v = stripDelimiters(attr.value)
   if (n === "wx:for") {
-    console.log("jiebro", attr, node.attrsMap)
-    return `v-for="item in ${stripDelimiters(attr.value)}"`
+    const test = parseWxmlWxFor(attr, node)
+    console.log(test)
+    return test
   } else if (n === "wx:if") {
     return `v-if="${stripDelimiters(attr.value)}"`
   } else if (n === "wx:elif") {
@@ -134,11 +138,19 @@ const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
     return `v-model="${v}"`
   } else if (n === "bindchange") {
     return `v-on:change="${v}"`
+  } else if (replaceAttrList.has(n)) {
+    return ""
   }
   return attr.value ? `${attr.name}="${attr.value}"` : attr.name
 }
 
-// const parseWxml
+const parseWxmlWxFor = (attr: Attribute, node: TreeNode) :string => {
+  const attrsMap = node.attrsMap
+  const itemKeyAttr = attrsMap.get("wx:for-item")
+  const indexKeyAttr = attrsMap.get("wx:for-index")
+  console.log(itemKeyAttr, indexKeyAttr)
+  return `v-for="(${itemKeyAttr ? itemKeyAttr.value : "item"}, ${indexKeyAttr ? indexKeyAttr.value : "index"}) in ${stripDelimiters(attr.value)}"`
+}
 
 const getNgIfElseAttrValue = (attr: Attribute, node: TreeNode): string => {
   return `${stripDelimiters(attr.value)}${node.nextElseTemplateId ? `; else elseBlock${node.nextElseTemplateId}` : ''}`
