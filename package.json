@@ -1,5 +1,5 @@
 {
-  "name": "wxminiapp2angular",
+  "name": "wxminiapp2vue",
   "version": "1.0.0",
   "description": "Parser wxml to angular template",
   "main": "dist/index.js",

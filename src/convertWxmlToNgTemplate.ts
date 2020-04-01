@@ -10,37 +10,17 @@ interface TreeNode extends DefaultTreeElement {
   templateId: number,
 }
 
-const ELSE_BLOCK_TEMPLSTE_PREFIX = "elseBlock"
-
-const html = `
-<view wx:for="{{list}}">
-  <!-- 注释 -->
-  <view wx:for="{{items}}" wx:if="{{item.isShow}}">
-    <span>{{item.name}}</span>
-  </view>
-  <image src="{{item.avatarUrl}}" />
-  <view wx:elif="{{item.isMyName}}">
-    {{item.yourname}}
-  </view>
-  <view wx:else>
-    else Data
-  </view>
-  <input autofocus />
-  <view wx:if="{{item.name === 'a'}}"> aaa </view>
-</view>
-`
-
 interface IContext {
   lines: string[],
   ngTemplateCounter: number,
 }
 
-export const convertWxmlToNgTemplate = (wxmlString: string): string => {
+export const convertWxmlToVueTemplate = (wxmlString: string): string => {
   const ast = parse(wxmlString) as any
   const ctx = { lines: [], ngTemplateCounter: 0 }
   const htmlNode = getHtmlNode(ast)
   const fragment: TreeNode[] = preprocessNodes(htmlNode.childNodes[1].childNodes, ctx)
-  wxmlFragment2angular(fragment, ctx)
+  wxmlFragment2Vue(fragment, ctx)
   return ctx.lines.join("")
 }
 
@@ -82,11 +62,11 @@ const preprocessNodes = (tree: TreeNode[], ctx: IContext): TreeNode[] => {
   return tree
 }
 
-export const wxmlFragment2angular = (fragment: TreeNode[], ctx: IContext) => {
+export const wxmlFragment2Vue = (fragment: TreeNode[], ctx: IContext) => {
   for (const node of fragment) {
     if (!node.nodeName.startsWith("#")) {
-      ctx.lines.push(parseWxmlNodeToAngularStartTag(node))
-      wxmlFragment2angular(node.childNodes as any, ctx)
+      ctx.lines.push(parseWxmlNodeToVueStartTag(node))
+      wxmlFragment2Vue(node.childNodes as any, ctx)
       ctx.lines.push(getParsedWxmlEndTagName(node))
     } else {
       if (node.nodeName === "#text") {
@@ -98,10 +78,11 @@ export const wxmlFragment2angular = (fragment: TreeNode[], ctx: IContext) => {
   }
 }
 
-const parseWxmlNodeToAngularStartTag = (node: TreeNode): string => {
+const parseWxmlNodeToVueStartTag = (node: TreeNode): string => {
   const tagName = getTagNameByWxmlNode(node)
   const attrsStr = parseWxmlNodeToAttrsString(node)
   const typeAttrStr = getTypeAttrStr(node.nodeName, tagName)
+  // console.log(tagName, TAGS_MAP)
   return `<${tagName} ${typeAttrStr} ${attrsStr}>`
 }
 
@@ -127,15 +108,17 @@ const getTagNameByWxmlNode = (node: TreeNode) => {
 const parseWxmlNodeToAttrsString = (node: TreeNode): string => {
   const attrsList = []
   for (const attr of node.attrs) {
-    attrsList.push(parseWxmlAttrToAngularAttrStr(attr, node))
+    attrsList.push(parseWxmlAttrToVueAttrStr(attr, node))
   }
   return attrsList.join(" ")
 }
 
-const parseWxmlAttrToAngularAttrStr = (attr: Attribute, node: TreeNode): string => {
+const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
   const n = attr.name
+  const attrsMap = node.attrsMap
   const v = stripDelimiters(attr.value)
   if (n === "wx:for") {
+    console.log("jiebro", attr, node.attrsMap)
     return `v-for="item in ${stripDelimiters(attr.value)}"`
   } else if (n === "wx:if") {
     return `v-if="${stripDelimiters(attr.value)}"`
@@ -153,7 +136,9 @@ const parseWxmlAttrToAngularAttrStr = (attr: Attribute, node: TreeNode): string 
     return `v-on:change="${v}"`
   }
   return attr.value ? `${attr.name}="${attr.value}"` : attr.name
-} 
+}
+
+// const parseWxml
 
 const getNgIfElseAttrValue = (attr: Attribute, node: TreeNode): string => {
   return `${stripDelimiters(attr.value)}${node.nextElseTemplateId ? `; else elseBlock${node.nextElseTemplateId}` : ''}`
