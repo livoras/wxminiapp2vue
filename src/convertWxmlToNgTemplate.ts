@@ -122,7 +122,6 @@ const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
   const v = stripDelimiters(attr.value)
   if (n === "wx:for") {
     const test = parseWxmlWxFor(attr, node)
-    console.log(test)
     return test
   } else if (n === "wx:if") {
     return `v-if="${stripDelimiters(attr.value)}"`
@@ -130,8 +129,11 @@ const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
     return `v-else-if="${stripDelimiters(attr.value)}"`
   } else if (n === "wx:else") {
     return `v-else`
-  } else if (n === "bindtap") {
-    return `v-touch:tap="${v}"`
+  } else if (n === "bindtap" || n === "bind:tap") {
+    return parseWxmlTap(attr, node)
+  } else if (n === "catchtap" || n === "catch:tap") {
+    // TODO: catch
+    return parseWxmlTap(attr, node)
   } else if (n === "bindinput") {
     return `v-on:input="${v}"`
   } else if (n === "value") {
@@ -148,8 +150,22 @@ const parseWxmlWxFor = (attr: Attribute, node: TreeNode) :string => {
   const attrsMap = node.attrsMap
   const itemKeyAttr = attrsMap.get("wx:for-item")
   const indexKeyAttr = attrsMap.get("wx:for-index")
-  console.log(itemKeyAttr, indexKeyAttr)
-  return `v-for="(${itemKeyAttr ? itemKeyAttr.value : "item"}, ${indexKeyAttr ? indexKeyAttr.value : "index"}) in ${stripDelimiters(attr.value)}"`
+  const wxKeyAttr = attrsMap.get("wx:key")
+  const itemStr = itemKeyAttr ? itemKeyAttr.value : "item"
+  const indexStr = indexKeyAttr ? indexKeyAttr.value : "index"
+  const keyStr = !wxKeyAttr || wxKeyAttr.value === "*this" ? indexStr : `${itemStr}.${wxKeyAttr.value}`
+  return `v-for="(${itemStr}, ${indexStr}) in ${stripDelimiters(attr.value)}" :key="${keyStr}"`
+}
+
+const parseWxmlTap = (attr: Attribute, node: TreeNode): string => {
+  const attrsMap = node.attrsMap
+  const dataSetList = []
+  attrsMap.forEach((item, key) => {
+    if (!key.indexOf("data-")) {
+      dataSetList.push(`${toCamel(key.slice(5))}: ${stripDelimiters(item.value)}`)
+    }
+  })
+  return `v-touch:tap="getHandleMethodEvent('${stripDelimiters(attr.value)}', { ${dataSetList.join(",")} })"`
 }
 
 const getNgIfElseAttrValue = (attr: Attribute, node: TreeNode): string => {
@@ -166,6 +182,12 @@ const isNormalNode = (node: TreeNode): boolean => {
 
 const isElseOrIfElseNode = (node: TreeNode): boolean => {
   return node.isElse || node.isElseIf
+}
+
+const toCamel = (str: string): string => {
+  return str.split("-").map((item) => item.toLowerCase()).join("-").replace(/([^-])(?:-+([^-]))/g, function ($0, $1, $2) {
+    return $1 + $2.toUpperCase();
+  })
 }
 
 // console.log(convertWxmlToNgTemplate(html))

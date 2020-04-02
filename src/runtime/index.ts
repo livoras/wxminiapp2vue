@@ -10,8 +10,39 @@ const setData = function(obj, callback) {
   }
 }
 
+const getHandleMethodEvent = function(name: string, dataset) {
+  const that = this
+  return function(event) {
+    const srcElement = event.srcElement
+    const target = event.target
+    const changedTouches = event.changedTouches[0] || {}
+    const e = {
+      currentTarget: {
+        dataset,
+        id: srcElement.id || "",
+        offsetLeft: srcElement.offsetLeft,
+        offsetTop: srcElement.offsetTop,
+      },
+      detail: {
+        x: changedTouches.clientX,
+        y: changedTouches.clientY,
+      },
+      target: {
+        dataset,
+        id: target.id || "",
+        offsetLeft: target.offsetLeft,
+        offsetTop: target.offsetTop,
+      },
+      timeStamp: event.timeStamp,
+      type: "tap",
+      _userTap: true,
+    }
+    that[name](e)
+  }
+}
+
 const Page = (page) => {
-  const methods = Object.assign(extractMethods(page), { setData })
+  const methods = Object.assign(extractMethods(page), { setData, getHandleMethodEvent })
   const app = new Vue({
     el: "#app",
     data: page.data,
