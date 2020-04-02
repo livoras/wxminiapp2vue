@@ -132,9 +132,9 @@ const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
     const test = parseWxmlWxFor(attr, node)
     return test
   } else if (n === "wx:if") {
-    return `v-if="${stripDelimiters(attr.value)}"`
+    return `v-if="${stripDelimiters(attr.value, true)}"`
   } else if (n === "wx:elif") {
-    return `v-else-if="${stripDelimiters(attr.value)}"`
+    return `v-else-if="${stripDelimiters(attr.value, true)}"`
   } else if (n === "wx:else") {
     return `v-else`
   } else if (tapList.has(n)) {
@@ -161,7 +161,7 @@ const parseWxmlWxFor = (attr: Attribute, node: TreeNode) :string => {
   const itemStr = itemKeyAttr ? itemKeyAttr.value : "item"
   const indexStr = indexKeyAttr ? indexKeyAttr.value : "index"
   const keyStr = !wxKeyAttr || wxKeyAttr.value === "*this" ? indexStr : `${itemStr}.${wxKeyAttr.value}`
-  return `v-for="(${itemStr}, ${indexStr}) in ${stripDelimiters(attr.value)}" :key="${keyStr}"`
+  return `v-for="(${itemStr}, ${indexStr}) in ${stripDelimiters(attr.value, true)}" :key="${keyStr}"`
 }
 
 const parseWxmlTap = (attr: Attribute, node: TreeNode, isStop: boolean = false, type: string = "tap"): string => {
@@ -169,7 +169,7 @@ const parseWxmlTap = (attr: Attribute, node: TreeNode, isStop: boolean = false, 
   const dataSetList = []
   attrsMap.forEach((item, key) => {
     if (!key.indexOf("data-")) {
-      dataSetList.push(`${toCamel(key.slice(5))}: ${stripDelimiters(item.value)}`)
+      dataSetList.push(`${toCamel(key.slice(5))}: ${stripDelimiters(item.value, true)}`)
     }
   })
   return `v-touch:${type}${isStop ? '.stop' : ''}="getHandleMethodEvent('${stripDelimiters(attr.value)}', { ${dataSetList.join(",")} })"`
@@ -179,8 +179,8 @@ const getNgIfElseAttrValue = (attr: Attribute, node: TreeNode): string => {
   return `${stripDelimiters(attr.value)}${node.nextElseTemplateId ? `; else elseBlock${node.nextElseTemplateId}` : ''}`
 }
 
-const stripDelimiters = (val: string): string => {
-  return val.replace(/(^\{\{)|(\}\}$)/g, '')
+const stripDelimiters = (val: string, isCompatibilityString: boolean = false): string => {
+  return val.search(/(^\{\{)|(\}\}$)/g) > -1 || !isCompatibilityString ? val.replace(/(^\{\{)|(\}\}$)/g, '') : `'${val}'`
 }
 
 const isNormalNode = (node: TreeNode): boolean => {
