@@ -35,6 +35,10 @@ export const specialAttrList: Set<string> = new Set([
   "focus", "type"
 ])
 
+export const inputAttrList: Set<string> = new Set([
+  "bindinput", "bind:input", "bindblur", "bind:blur", "bindfocus", "bind:focus"
+])
+
 export const convertWxmlToVueTemplate = (wxmlString: string): string => {
   const ast = parse(wxmlString) as any
   const ctx = { lines: [], ngTemplateCounter: 0 }
@@ -149,7 +153,7 @@ const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
     return parseWxmlTap(attr, node, n.indexOf("catch") > -1)
   } else if (longTapList.has(n)) {
     return parseWxmlTap(attr, node, n.indexOf("catch") > -1, "longtap")
-  } else if (n === "bindinput") {
+  } else if (inputAttrList.has(n)) {
     return parseWxmlInput(attr, node)
   } else if (n === "value") {
     const isHasDelimiters = checkIsHasDelimiters(attr.value)
@@ -184,11 +188,13 @@ const parseWxmlTap = (attr: Attribute, node: TreeNode, isStop: boolean = false, 
 
 const parseWxmlInput = (attr: Attribute, node: TreeNode): string => {
   const v = stripDelimiters(attr.value)
+  const n = attr.name
   const attrsMap = node.attrsMap
   const inputKey = attrsMap.get("value").value
-  const realKey = checkIsHasDelimiters(inputKey) ? stripDelimiters(inputKey) : ""
+  const type = n.replace(/(bind)(:?)/g, '')
+  const realKey = checkIsHasDelimiters(inputKey) && type === 'input' ? stripDelimiters(inputKey) : ""
   const dataSetList = getCurrentTargetDataSet(node)
-  return `@input="getInputReturn(${v}, '${realKey}', { ${dataSetList.join(",")} }, $event)"`
+  return `@${type}="getInputReturn(${v}, '${realKey}', { ${dataSetList.join(",")} }, $event)"`
 }
 
 const parseWxmlSpecialAttr = (attr: Attribute, node: TreeNode): string => {
