@@ -19,6 +19,14 @@ export const replaceAttrList: Set<string> = new Set([
   "wx:for-item", "wx:for-index"
 ])
 
+export const longTapList: Set<string> = new Set([
+  "bindlongtap", "bindlongtap", "bindlongpress", "bind:longpress", "catchlongtap", "catchlongtap", "catchlongpress", "catch:longpress",
+])
+
+export const tapList: Set<string> = new Set([
+  "bindtap", "bind:tap", "catchtap", "catch:tap"
+])
+
 export const convertWxmlToVueTemplate = (wxmlString: string): string => {
   const ast = parse(wxmlString) as any
   const ctx = { lines: [], ngTemplateCounter: 0 }
@@ -129,11 +137,10 @@ const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
     return `v-else-if="${stripDelimiters(attr.value)}"`
   } else if (n === "wx:else") {
     return `v-else`
-  } else if (n === "bindtap" || n === "bind:tap") {
-    return parseWxmlTap(attr, node)
-  } else if (n === "catchtap" || n === "catch:tap") {
-    // TODO: catch
-    return parseWxmlTap(attr, node)
+  } else if (tapList.has(n)) {
+    return parseWxmlTap(attr, node, n.indexOf("catch") > -1)
+  } else if (longTapList.has(n)) {
+    return parseWxmlTap(attr, node, n.indexOf("catch") > -1, "longtap")
   } else if (n === "bindinput") {
     return `v-on:input="${v}"`
   } else if (n === "value") {
@@ -157,7 +164,7 @@ const parseWxmlWxFor = (attr: Attribute, node: TreeNode) :string => {
   return `v-for="(${itemStr}, ${indexStr}) in ${stripDelimiters(attr.value)}" :key="${keyStr}"`
 }
 
-const parseWxmlTap = (attr: Attribute, node: TreeNode): string => {
+const parseWxmlTap = (attr: Attribute, node: TreeNode, isStop: boolean = false, type: string = "tap"): string => {
   const attrsMap = node.attrsMap
   const dataSetList = []
   attrsMap.forEach((item, key) => {
@@ -165,7 +172,7 @@ const parseWxmlTap = (attr: Attribute, node: TreeNode): string => {
       dataSetList.push(`${toCamel(key.slice(5))}: ${stripDelimiters(item.value)}`)
     }
   })
-  return `v-touch:tap="getHandleMethodEvent('${stripDelimiters(attr.value)}', { ${dataSetList.join(",")} })"`
+  return `v-touch:${type}${isStop ? '.stop' : ''}="getHandleMethodEvent('${stripDelimiters(attr.value)}', { ${dataSetList.join(",")} })"`
 }
 
 const getNgIfElseAttrValue = (attr: Attribute, node: TreeNode): string => {
