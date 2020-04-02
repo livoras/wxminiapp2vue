@@ -13,19 +13,26 @@ interface TreeNode extends DefaultTreeElement {
 interface IContext {
   lines: string[],
   ngTemplateCounter: number,
+  template: string,
+  wxs: any[],
 }
 
 export const replaceAttrList: Set<string> = new Set([
   "wx:for-item", "wx:for-index"
 ])
 
-export const convertWxmlToVueTemplate = (wxmlString: string): string => {
+export const convertWxmlToVueTemplate = (wxmlString: string): IContext => {
+  wxmlString = wxmlString.replace(/\<\s*([^\s\/\>]+)[^\>]+?\/\s*\>/g, (a, b) => {
+    return a.replace(/\s*\/>/, '>') + `</${b}>`
+  })
+  // console.log(wxmlString, "--->")
   const ast = parse(wxmlString) as any
-  const ctx = { lines: [], ngTemplateCounter: 0 }
+  const ctx = { lines: [], ngTemplateCounter: 0, template: "", wxs: [] }
   const htmlNode = getHtmlNode(ast)
   const fragment: TreeNode[] = preprocessNodes(htmlNode.childNodes[1].childNodes, ctx)
   wxmlFragment2Vue(fragment, ctx)
-  return ctx.lines.join("")
+  ctx.template = ctx.lines.join("")
+  return ctx
 }
 
 const getHtmlNode = (ast) => {
@@ -68,7 +75,9 @@ const preprocessNodes = (tree: TreeNode[], ctx: IContext): TreeNode[] => {
 
 export const wxmlFragment2Vue = (fragment: TreeNode[], ctx: IContext) => {
   for (const node of fragment) {
-    if (!node.nodeName.startsWith("#")) {
+    if (node.nodeName === "wxs") {
+      ctx.wxs.push(node)
+    } else if (!node.nodeName.startsWith("#")) {
       ctx.lines.push(parseWxmlNodeToVueStartTag(node))
       wxmlFragment2Vue(node.childNodes as any, ctx)
       ctx.lines.push(getParsedWxmlEndTagName(node))

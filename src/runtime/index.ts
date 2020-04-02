@@ -4,18 +4,20 @@ declare const Vue: any
 let app
 let currentTemplate = ""
 let currentName = ""
-let pages = new Map<string, { template: string, page: any }>()
+let pages = new Map<string, { template: string, page: any, wxs: any }>()
+let currentWxs = {}
 
-const registerPage = (name, template, page) => {
-  console.log("Register page --->", name)
+const registerPage = (name, template, page, wxs) => {
+  console.log("Register page ->", name)
   pages.set(name, {
-    template, page
+    template, page, wxs,
   })
 }
 
-export const registerTemplate = (name, template) => {
+export const registerTemplate = (name, template, wxs) => {
   currentName = name
   currentTemplate = template
+  currentWxs = wxs
 }
 
 const setData = function(obj, callback) {
@@ -26,7 +28,7 @@ const setData = function(obj, callback) {
 }
 
 const Page = (page) => {
-  registerPage(currentName, currentTemplate, page)
+  registerPage(currentName, currentTemplate, page, currentWxs)
 }
 
 const extractMethods = (obj) => {
@@ -73,6 +75,7 @@ export const Component = (com) => {
   const cname = caps[caps.length - 1]
   console.log("------> Component", cname)
   const props = converVueComponentProps(com.properties)
+  const wxs = currentWxs
   Vue.component(cname, {
     template: t,
     props,
@@ -89,7 +92,7 @@ export const Component = (com) => {
         }
       })
       if (com.data) {
-        return {...com.data}
+        return {...com.data, ...parseWxs(wxs)}
       }
       return {}
     }
@@ -108,17 +111,35 @@ export const converVueComponentProps = (props) => {
 }
 
 export const routeTo = (url) => {
-  const { template, page } = pages.get(url)
+  const { template, page, wxs: rawWxs } = pages.get(url)
   document.getElementById("app").innerHTML = template
   const methods = Object.assign(extractMethods(page), { setData })
+  const wxs = parseWxs(rawWxs)
   const app = new Vue({
     el: "#app",
-    data: page.data,
+    data: { ... page.data, ...wxs },
     methods,
   })
   Object.defineProperty(app, "data", {
     get: () => { return app.$data },
   })
+}
+
+const parseWxs = (rawWxs) => {
+  const wxs = Object.keys(rawWxs).reduce((w, key) => {
+    const xs = rawWxs[key]
+    if (xs.id) {
+      w[key] = (window as any).wxs[xs.id]
+    } else {
+      w[key] = (new Function(`
+        var module = { exports: {} };
+        ${xs.js};
+        return module.exports
+      `))()
+    }
+    return w
+  }, {})
+  return wxs
 }
 
 export default { Page, getApp, Component, routeTo }
