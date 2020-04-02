@@ -16,7 +16,7 @@ interface IContext {
 }
 
 export const replaceAttrList: Set<string> = new Set([
-  "wx:for-item", "wx:for-index"
+  "wx:for-item", "wx:for-index", "confirm-type"
 ])
 
 export const longTapList: Set<string> = new Set([
@@ -25,6 +25,14 @@ export const longTapList: Set<string> = new Set([
 
 export const tapList: Set<string> = new Set([
   "bindtap", "bind:tap", "catchtap", "catch:tap"
+])
+
+export const commonAttrList: Set<string> = new Set([
+  "disabled", "placeholder", "maxlength" ,"autofocus"
+])
+
+export const specialAttrList: Set<string> = new Set([
+  "focus", "type"
 ])
 
 export const convertWxmlToVueTemplate = (wxmlString: string): string => {
@@ -142,13 +150,18 @@ const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
   } else if (longTapList.has(n)) {
     return parseWxmlTap(attr, node, n.indexOf("catch") > -1, "longtap")
   } else if (n === "bindinput") {
-    return `v-on:input="${v}"`
+    return parseWxmlInput(attr, node)
   } else if (n === "value") {
-    return `v-model="${v}"`
+    const isHasDelimiters = checkIsHasDelimiters(attr.value)
+    return isHasDelimiters ? `v-model="${v}"` : `value=${v}`
   } else if (n === "bindchange") {
     return `v-on:change="${v}"`
   } else if (replaceAttrList.has(n)) {
     return ""
+  } else if (commonAttrList.has(n)) {
+    return `:${n}="${v}"`
+  } else if (specialAttrList.has(n)) {
+    return parseWxmlSpecialAttr(attr, node)
   }
   return attr.value ? `${attr.name}="${attr.value}"` : attr.name
 }
@@ -165,6 +178,35 @@ const parseWxmlWxFor = (attr: Attribute, node: TreeNode) :string => {
 }
 
 const parseWxmlTap = (attr: Attribute, node: TreeNode, isStop: boolean = false, type: string = "tap"): string => {
+  const dataSetList = getCurrentTargetDataSet(node)
+  return `v-touch:${type}${isStop ? '.stop' : ''}="getHandleMethodEvent(${stripDelimiters(attr.value)}, { ${dataSetList.join(",")} })"`
+}
+
+const parseWxmlInput = (attr: Attribute, node: TreeNode): string => {
+  const v = stripDelimiters(attr.value)
+  const attrsMap = node.attrsMap
+  const inputKey = attrsMap.get("value").value
+  const realKey = checkIsHasDelimiters(inputKey) ? stripDelimiters(inputKey) : ""
+  const dataSetList = getCurrentTargetDataSet(node)
+  return `@input="getInputReturn(${v}, '${realKey}', { ${dataSetList.join(",")} }, $event)"`
+}
+
+const parseWxmlSpecialAttr = (attr: Attribute, node: TreeNode): string => {
+  const n = attr.name
+  const v = stripDelimiters(attr.value)
+  const attrsMap = node.attrsMap
+  if (n === "focus") {
+    return `:autofocus="${v}"`
+  } else if (n === "password") {
+    // TOOD: 暂时不考虑密码类型
+  } else if (n === "type" && node.nodeName === "input") { // digit/idcard/number 都用数字键盘 + confirm-type支持search【好像没用】
+    const isHasConfirmType = attrsMap.has("confirm-type")
+    return `:type="!${v} || ${v} === 'text' ? ${isHasConfirmType && attrsMap.get("confirm-type").value === "search"} ? 'search' : 'text' : 'number'"`
+  }
+  return ""
+}
+
+const getCurrentTargetDataSet = (node: TreeNode): string[] => {
   const attrsMap = node.attrsMap
   const dataSetList = []
   attrsMap.forEach((item, key) => {
@@ -172,15 +214,19 @@ const parseWxmlTap = (attr: Attribute, node: TreeNode, isStop: boolean = false, 
       dataSetList.push(`${toCamel(key.slice(5))}: ${stripDelimiters(item.value)}`)
     }
   })
-  return `v-touch:${type}${isStop ? '.stop' : ''}="getHandleMethodEvent(${stripDelimiters(attr.value)}, { ${dataSetList.join(",")} })"`
+  return dataSetList
 }
 
 const getNgIfElseAttrValue = (attr: Attribute, node: TreeNode): string => {
   return `${stripDelimiters(attr.value)}${node.nextElseTemplateId ? `; else elseBlock${node.nextElseTemplateId}` : ''}`
 }
 
+const checkIsHasDelimiters = (val: string): boolean => {
+  return val.search(/(^\{\{)|(\}\}$)/g) > -1
+}
+
 const stripDelimiters = (val: string): string => {
-  return val.search(/(^\{\{)|(\}\}$)/g) > -1 ? val.replace(/(^\{\{)|(\}\}$)/g, '') : `'${val}'`
+  return checkIsHasDelimiters(val) ? val.replace(/(^\{\{)|(\}\}$)/g, '') : `'${val}'`
 }
 
 const isNormalNode = (node: TreeNode): boolean => {
