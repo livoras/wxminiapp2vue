@@ -27,6 +27,23 @@ const setData = function(obj, callback) {
   }
 }
 
+const getHandleMethodEvent = function(name: string, dataset: any) {
+  const that = this
+  return function(e, ...args) {
+    e.dataset = dataset
+    that[name](e, ...args)
+  }
+}
+
+const getInputReturn = function(name: string, key: string, dataset: any ,e: any) {
+  e.dataset = dataset
+  const returnInput = this[name](e)
+  if (!returnInput && returnInput !== "" || !key) { return }
+  this.setData({
+    [key]: returnInput,
+  })
+}
+
 const Page = (page) => {
   registerPage(currentName, currentTemplate, page, currentWxs)
 }
@@ -45,23 +62,37 @@ const wrapEventFunc = (func) => {
   return function (...args) {
     const e = args[0]
     if (e instanceof Event) {
-      func.call(
+      return func.call(
         this,
         wrapEventToWXEvent(e),
         ...args.slice(1)
       )
     } else {
-      func.call(this, ...args)
+      return func.call(this, ...args)
     }
   }
 }
 
 const wrapEventToWXEvent = (e) => {
+  const dataset = e.dataset
   return {
     detail: { value: e.target.value },
-    target: e.target,
-    currentTarget: e.currentTarget,
+    target: {
+      dataset,
+      id: e.target.id || "",
+      offsetLeft: e.target.offsetLeft,
+      offsetTop: e.target.offsetTop,
+    },
+    currentTarget: {
+      dataset,
+      id: e.currentTarget.id || "",
+      offsetLeft: e.currentTarget.offsetLeft,
+      offsetTop: e.currentTarget.offsetTop,
+    },
     original: e,
+    timeStamp: e.timeStamp,
+    type: e.type === "touchend" ? "tap" : e.type,
+    _userTap: true,
   }
 }
 
@@ -79,7 +110,7 @@ export const Component = (com) => {
   Vue.component(cname, {
     template: t,
     props,
-    methods: Object.assign(com.methods || {}, { setData }),
+    methods: Object.assign(com.methods || {}, { setData, getHandleMethodEvent, getInputReturn }),
     /** TODO:
      * 1. 合并生命周期
      * 2. v-bind 语法：在 2vue 的项目中改
@@ -113,7 +144,7 @@ export const converVueComponentProps = (props) => {
 export const routeTo = (url) => {
   const { template, page, wxs: rawWxs } = pages.get(url)
   document.getElementById("app").innerHTML = template
-  const methods = Object.assign(extractMethods(page), { setData })
+  const methods = Object.assign(extractMethods(page), { setData, getHandleMethodEvent, getInputReturn })
   const wxs = parseWxs(rawWxs)
   const app = new Vue({
     el: "#app",

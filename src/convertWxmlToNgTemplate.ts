@@ -18,7 +18,27 @@ interface IContext {
 }
 
 export const replaceAttrList: Set<string> = new Set([
-  "wx:for-item", "wx:for-index"
+  "wx:for-item", "wx:for-index", "confirm-type"
+])
+
+export const longTapList: Set<string> = new Set([
+  "bindlongtap", "bindlongtap", "bindlongpress", "bind:longpress", "catchlongtap", "catchlongtap", "catchlongpress", "catch:longpress",
+])
+
+export const tapList: Set<string> = new Set([
+  "bindtap", "bind:tap", "catchtap", "catch:tap"
+])
+
+export const commonAttrList: Set<string> = new Set([
+  "disabled", "placeholder", "maxlength" ,"autofocus"
+])
+
+export const specialAttrList: Set<string> = new Set([
+  "focus", "type"
+])
+
+export const inputAttrList: Set<string> = new Set([
+  "bindinput", "bind:input", "bindblur", "bind:blur", "bindfocus", "bind:focus"
 ])
 
 export const convertWxmlToVueTemplate = (wxmlString: string): IContext => {
@@ -131,7 +151,6 @@ const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
   const v = stripDelimiters(attr.value)
   if (n === "wx:for") {
     const test = parseWxmlWxFor(attr, node)
-    console.log(test)
     return test
   } else if (n === "wx:if") {
     return `v-if="${stripDelimiters(attr.value)}"`
@@ -139,16 +158,23 @@ const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
     return `v-else-if="${stripDelimiters(attr.value)}"`
   } else if (n === "wx:else") {
     return `v-else`
-  } else if (n === "bindtap") {
-    return `v-touch:tap="${v}"`
-  } else if (n === "bindinput") {
-    return `v-on:input="${v}"`
+  } else if (tapList.has(n)) {
+    return parseWxmlTap(attr, node, n.indexOf("catch") > -1)
+  } else if (longTapList.has(n)) {
+    return parseWxmlTap(attr, node, n.indexOf("catch") > -1, "longtap")
+  } else if (inputAttrList.has(n)) {
+    return parseWxmlInput(attr, node)
   } else if (n === "value") {
-    return `v-model="${v}"`
+    const isHasDelimiters = checkIsHasDelimiters(attr.value)
+    return isHasDelimiters ? `v-model="${v}"` : `value=${v}`
   } else if (n === "bindchange") {
     return `v-on:change="${v}"`
   } else if (replaceAttrList.has(n)) {
     return ""
+  } else if (commonAttrList.has(n)) {
+    return `:${n}="${v}"`
+  } else if (specialAttrList.has(n)) {
+    return parseWxmlSpecialAttr(attr, node)
   }
   return attr.value ? `${attr.name}="${attr.value}"` : attr.name
 }
@@ -157,16 +183,65 @@ const parseWxmlWxFor = (attr: Attribute, node: TreeNode) :string => {
   const attrsMap = node.attrsMap
   const itemKeyAttr = attrsMap.get("wx:for-item")
   const indexKeyAttr = attrsMap.get("wx:for-index")
-  console.log(itemKeyAttr, indexKeyAttr)
-  return `v-for="(${itemKeyAttr ? itemKeyAttr.value : "item"}, ${indexKeyAttr ? indexKeyAttr.value : "index"}) in ${stripDelimiters(attr.value)}"`
+  const wxKeyAttr = attrsMap.get("wx:key")
+  const itemStr = itemKeyAttr ? itemKeyAttr.value : "item"
+  const indexStr = indexKeyAttr ? indexKeyAttr.value : "index"
+  const keyStr = !wxKeyAttr || wxKeyAttr.value === "*this" ? indexStr : `${itemStr}.${wxKeyAttr.value}`
+  return `v-for="(${itemStr}, ${indexStr}) in ${stripDelimiters(attr.value)}" :key="${keyStr}"`
+}
+
+const parseWxmlTap = (attr: Attribute, node: TreeNode, isStop: boolean = false, type: string = "tap"): string => {
+  const dataSetList = getCurrentTargetDataSet(node)
+  return `v-touch:${type}${isStop ? '.stop' : ''}="getHandleMethodEvent(${stripDelimiters(attr.value)}, { ${dataSetList.join(",")} })"`
+}
+
+const parseWxmlInput = (attr: Attribute, node: TreeNode): string => {
+  const v = stripDelimiters(attr.value)
+  const n = attr.name
+  const attrsMap = node.attrsMap
+  const inputKey = attrsMap.get("value").value
+  const type = n.replace(/(bind)(:?)/g, '')
+  const realKey = checkIsHasDelimiters(inputKey) && type === 'input' ? stripDelimiters(inputKey) : ""
+  const dataSetList = getCurrentTargetDataSet(node)
+  return `@${type}="getInputReturn(${v}, '${realKey}', { ${dataSetList.join(",")} }, $event)"`
+}
+
+const parseWxmlSpecialAttr = (attr: Attribute, node: TreeNode): string => {
+  const n = attr.name
+  const v = stripDelimiters(attr.value)
+  const attrsMap = node.attrsMap
+  if (n === "focus") {
+    return `:autofocus="${v}"`
+  } else if (n === "password") {
+    // TOOD: 暂时不考虑密码类型
+  } else if (n === "type" && node.nodeName === "input") { // digit/idcard/number 都用数字键盘 + confirm-type支持search【好像没用】
+    const isHasConfirmType = attrsMap.has("confirm-type")
+    return `:type="!${v} || ${v} === 'text' ? ${isHasConfirmType && attrsMap.get("confirm-type").value === "search"} ? 'search' : 'text' : 'number'"`
+  }
+  return ""
+}
+
+const getCurrentTargetDataSet = (node: TreeNode): string[] => {
+  const attrsMap = node.attrsMap
+  const dataSetList = []
+  attrsMap.forEach((item, key) => {
+    if (!key.indexOf("data-")) {
+      dataSetList.push(`${toCamel(key.slice(5))}: ${stripDelimiters(item.value)}`)
+    }
+  })
+  return dataSetList
 }
 
 const getNgIfElseAttrValue = (attr: Attribute, node: TreeNode): string => {
   return `${stripDelimiters(attr.value)}${node.nextElseTemplateId ? `; else elseBlock${node.nextElseTemplateId}` : ''}`
 }
 
+const checkIsHasDelimiters = (val: string): boolean => {
+  return val.search(/(^\{\{)|(\}\}$)/g) > -1
+}
+
 const stripDelimiters = (val: string): string => {
-  return val.replace(/(^\{\{)|(\}\}$)/g, '')
+  return checkIsHasDelimiters(val) ? val.replace(/(^\{\{)|(\}\}$)/g, '') : `'${val}'`
 }
 
 const isNormalNode = (node: TreeNode): boolean => {
@@ -175,6 +250,12 @@ const isNormalNode = (node: TreeNode): boolean => {
 
 const isElseOrIfElseNode = (node: TreeNode): boolean => {
   return node.isElse || node.isElseIf
+}
+
+const toCamel = (str: string): string => {
+  return str.split("-").map((item) => item.toLowerCase()).join("-").replace(/([^-])(?:-+([^-]))/g, function ($0, $1, $2) {
+    return $1 + $2.toUpperCase();
+  })
 }
 
 // console.log(convertWxmlToNgTemplate(html))
