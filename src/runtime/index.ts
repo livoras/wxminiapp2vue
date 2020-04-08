@@ -7,6 +7,10 @@ let currentName = ""
 let pages = new Map<string, { template: string, page: any, wxs: any }>()
 let currentWxs = {}
 
+const App = (options) => {
+  // app = ???
+}
+
 const registerPage = (name, template, page, wxs) => {
   console.log("Register page ->", name)
   pages.set(name, {
@@ -141,6 +145,8 @@ export const converVueComponentProps = (props) => {
   }, {})
 }
 
+let isFirst = true
+
 export const routeTo = (url) => {
   const { template, page, wxs: rawWxs } = pages.get(url)
   document.getElementById("app").innerHTML = template
@@ -151,6 +157,10 @@ export const routeTo = (url) => {
     data: { ... page.data, ...wxs },
     methods,
   })
+  if (isFirst) {
+    app.onLauch()
+    isFirst = false
+  }
   Object.defineProperty(app, "data", {
     get: () => { return app.$data },
   })
