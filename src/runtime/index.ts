@@ -8,7 +8,10 @@ let pages = new Map<string, { template: string, page: any, wxs: any }>()
 let currentWxs = {}
 
 const App = (options) => {
-  // app = ???
+  const { onLaunch, globalData } = options
+  app = {
+    onLaunch: () => {},
+  }
 }
 
 const registerPage = (name, template, page, wxs) => {
@@ -148,19 +151,19 @@ export const converVueComponentProps = (props) => {
 let isFirst = true
 
 export const routeTo = (url) => {
+  if (isFirst) {
+    app.onLaunch()
+    isFirst = false
+  }
   const { template, page, wxs: rawWxs } = pages.get(url)
   document.getElementById("app").innerHTML = template
   const methods = Object.assign(extractMethods(page), { setData, getHandleMethodEvent, getInputReturn })
   const wxs = parseWxs(rawWxs)
   const app = new Vue({
     el: "#app",
-    data: { ... page.data, ...wxs },
+    data: { ...page.data, ...wxs },
     methods,
   })
-  if (isFirst) {
-    app.onLauch()
-    isFirst = false
-  }
   Object.defineProperty(app, "data", {
     get: () => { return app.$data },
   })
