@@ -153,6 +153,7 @@ export const routeTo = (url) => {
     methods,
     created: function() {
       this.onLoad(urlObj.queryObj)
+      this.onShow()
     }
   })
   Object.defineProperty(curPage, "data", {
