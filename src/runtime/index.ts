@@ -4,7 +4,7 @@ declare const Vue: any
 let app
 let currentTemplate = ""
 let currentName = ""
-let pages = new Map<string, { template: string, page: any, wxs: any }>()
+let pages = new Map<string, { template: string, page: any, wxs: any}>()
 let currentWxs = {}
 
 const App = (options) => {
@@ -155,17 +155,26 @@ export const routeTo = (url) => {
     app.onLaunch()
     isFirst = false
   }
-  const { template, page, wxs: rawWxs } = pages.get(url)
+  const urlObj = getQuery(url)
+  const { template, page, wxs: rawWxs } = pages.get(urlObj.realUrl)
   document.getElementById("app").innerHTML = template
   const methods = Object.assign(extractMethods(page), { setData, getHandleMethodEvent, getInputReturn })
   const wxs = parseWxs(rawWxs)
-  const app = new Vue({
+  const curPage = new Vue({
     el: "#app",
     data: { ...page.data, ...wxs },
     methods,
+    created: function() {
+      if (this.onLoad) {
+        this.onLoad(urlObj.queryObj)
+      }
+      if (this.onShow) {
+        this.onShow()
+      }
+    }
   })
-  Object.defineProperty(app, "data", {
-    get: () => { return app.$data },
+  Object.defineProperty(curPage, "data", {
+    get: () => { return curPage.$data },
   })
 }
 
@@ -185,5 +194,17 @@ const parseWxs = (rawWxs) => {
   }, {})
   return wxs
 }
+
+const getQuery = (url): { realUrl: string, queryObj: { [x: string]: any}} => {
+    const realUrl = url.split("?")[0]
+    const queryStr = url.split("?")[1]
+    const queryObj = {}
+    if (!queryStr) { return { realUrl, queryObj } }
+    queryStr.split("&").forEach((item) => {
+      const query = item.split("=")
+      queryObj[query[0]] = query[1]
+    })
+    return { realUrl, queryObj }
+  }
 
 export default { Page, getApp, Component, routeTo }
