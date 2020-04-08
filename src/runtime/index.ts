@@ -152,8 +152,12 @@ export const routeTo = (url) => {
     data: { ... page.data, ...wxs },
     methods,
     created: function() {
-      this.onLoad(urlObj.queryObj)
-      this.onShow()
+      if (this.onLoad) {
+        this.onLoad(urlObj.queryObj)
+      }
+      if (this.onShow) {
+        this.onShow()
+      }
     }
   })
   Object.defineProperty(curPage, "data", {
