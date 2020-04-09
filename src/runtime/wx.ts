@@ -29,10 +29,7 @@ export const wx = {
   },
 
   getStorage: (opt) => {
-    const sucCallback = opt.success
-    const failCallback = opt.fail
-    const completeCallback = opt.complete
-    const localStorageOperate = new Promise((resolve, reject) => {
+    const getStorage = new Promise((resolve, reject) => {
       try {
         const value = localStorage.getItem(opt.key)
         resolve({ data: value, errMsg: "" })
@@ -42,17 +39,11 @@ export const wx = {
         resolve({ errMsg: "" })
       }
     })
-    localStorageOperate
-      .then((res) => { if (sucCallback) { sucCallback(res) } })
-      .catch((e) => { if (failCallback) { failCallback(e) } })
-      .then(() => { if (completeCallback) { completeCallback() } })
+    operateStorage(opt, getStorage)
   },
 
   setStorage: (opt) => {
-    const sucCallback = opt.success
-    const failCallback = opt.fail
-    const completeCallback = opt.complete
-    const localStorageOperate = new Promise((resolve, reject) => {
+    const setStorage = new Promise((resolve, reject) => {
       try {
         localStorage.setItem(opt.key, opt.data)
         resolve({ errMsg: "" })
@@ -62,17 +53,11 @@ export const wx = {
         resolve({ errMsg: "" })
       }
     })
-    localStorageOperate
-      .then((res) => { if (sucCallback) { sucCallback(res) } })
-      .catch((e) => { if (failCallback) { failCallback(e) } })
-      .then(() => { if (completeCallback) { completeCallback() } })
+    operateStorage(opt, setStorage)
   },
 
   removeStorage: (opt) => {
-    const sucCallback = opt.success
-    const failCallback = opt.fail
-    const completeCallback = opt.complete
-    const localStorageOperate = new Promise((resolve, reject) => {
+    const removeStorage = new Promise((resolve, reject) => {
       try {
         localStorage.removeItem(opt.key)
         resolve({ errMsg: "" })
@@ -82,13 +67,33 @@ export const wx = {
         resolve({ errMsg: "" })
       }
     })
-    localStorageOperate
-      .then((res) => { if (sucCallback) { sucCallback(res) } })
-      .catch((e) => { if (failCallback) { failCallback(e) } })
-      .then(() => { if (completeCallback) { completeCallback() } })
+    operateStorage(opt, removeStorage)
   },
 
   navigateTo: (opt) => {
-
+    wxApi.miniProgram.navigateTo(opt)
   },
+
+  navigateBack: (opt) => {
+    wxApi.miniProgram.navigateBack(opt)
+  },
+
+  reLaunch: (opt) => {
+    wxApi.miniProgram.reLaunch(opt)
+  },
+
+  redirectTo: (opt) => {
+    wxApi.miniProgram.redirectTo(opt)
+  },
+}
+
+const operateStorage = function (opt, fuc) {
+  const sucCallback = opt.success
+  const failCallback = opt.fail
+  const completeCallback = opt.complete
+  fuc
+    .then((res) => { if (sucCallback) { sucCallback(res) } })
+    .catch((e) => { if (failCallback) { failCallback(e) } })
+    .then(() => { if (completeCallback) { completeCallback() } })
+
 }
