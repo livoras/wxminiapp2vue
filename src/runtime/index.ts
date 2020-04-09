@@ -10,7 +10,24 @@ let currentWxs = {}
 const App = (options) => {
   const { onLaunch, globalData } = options
   app = {
-    onLaunch: () => {},
+    onLaunch: () => {
+      for (const param in globalData) {
+        console.log(param, globalData[param], localStorage)
+        localStorage.setItem(param, globalData[param])
+      }
+    },
+    getStorage: (key: string) => {
+      return localStorage.getItem(key)
+    },
+    setStorage: (key: string, value: any) => {
+      localStorage.setItem(key, value)
+    },
+    removeStorage: (key: string) => {
+      localStorage.removeItem(key)
+    },
+    clearStorage: () => {
+      localStorage.clear()
+    }
   }
 }
 
@@ -207,4 +224,4 @@ const getQuery = (url): { realUrl: string, queryObj: { [x: string]: any}} => {
     return { realUrl, queryObj }
   }
 
-export default { Page, getApp, Component, routeTo }
+export default { App, Page, getApp, Component, routeTo }
