@@ -1,4 +1,5 @@
 import 'vue2-touch-events'
+import "./wx"
 
 declare const Vue: any
 let app
@@ -11,23 +12,11 @@ const App = (options) => {
   const { onLaunch, globalData } = options
   app = {
     onLaunch: () => {
+      onLaunch()
       for (const param in globalData) {
-        console.log(param, globalData[param], localStorage)
         localStorage.setItem(param, globalData[param])
       }
     },
-    getStorage: (key: string) => {
-      return localStorage.getItem(key)
-    },
-    setStorage: (key: string, value: any) => {
-      localStorage.setItem(key, value)
-    },
-    removeStorage: (key: string) => {
-      localStorage.removeItem(key)
-    },
-    clearStorage: () => {
-      localStorage.clear()
-    }
   }
 }
 
