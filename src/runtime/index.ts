@@ -1,11 +1,24 @@
 import 'vue2-touch-events'
+import "./wx"
 
 declare const Vue: any
 let app
 let currentTemplate = ""
 let currentName = ""
-let pages = new Map<string, { template: string, page: any, wxs: any }>()
+let pages = new Map<string, { template: string, page: any, wxs: any}>()
 let currentWxs = {}
+
+const App = (options) => {
+  const { onLaunch, globalData } = options
+  app = {
+    onLaunch: () => {
+      onLaunch()
+      for (const param in globalData) {
+        localStorage.setItem(param, globalData[param])
+      }
+    },
+  }
+}
 
 const registerPage = (name, template, page, wxs) => {
   console.log("Register page ->", name)
@@ -141,18 +154,33 @@ export const converVueComponentProps = (props) => {
   }, {})
 }
 
+let isFirst = true
+
 export const routeTo = (url) => {
-  const { template, page, wxs: rawWxs } = pages.get(url)
+  if (isFirst) {
+    app.onLaunch()
+    isFirst = false
+  }
+  const urlObj = getQuery(url)
+  const { template, page, wxs: rawWxs } = pages.get(urlObj.realUrl)
   document.getElementById("app").innerHTML = template
   const methods = Object.assign(extractMethods(page), { setData, getHandleMethodEvent, getInputReturn })
   const wxs = parseWxs(rawWxs)
-  const app = new Vue({
+  const curPage = new Vue({
     el: "#app",
-    data: { ... page.data, ...wxs },
+    data: { ...page.data, ...wxs },
     methods,
+    created: function() {
+      if (this.onLoad) {
+        this.onLoad(urlObj.queryObj)
+      }
+      if (this.onShow) {
+        this.onShow()
+      }
+    }
   })
-  Object.defineProperty(app, "data", {
-    get: () => { return app.$data },
+  Object.defineProperty(curPage, "data", {
+    get: () => { return curPage.$data },
   })
 }
 
@@ -173,4 +201,16 @@ const parseWxs = (rawWxs) => {
   return wxs
 }
 
-export default { Page, getApp, Component, routeTo }
+const getQuery = (url): { realUrl: string, queryObj: { [x: string]: any}} => {
+    const realUrl = url.split("?")[0]
+    const queryStr = url.split("?")[1]
+    const queryObj = {}
+    if (!queryStr) { return { realUrl, queryObj } }
+    queryStr.split("&").forEach((item) => {
+      const query = item.split("=")
+      queryObj[query[0]] = query[1]
+    })
+    return { realUrl, queryObj }
+  }
+
+export default { App, Page, getApp, Component, routeTo }
