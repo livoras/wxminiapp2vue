@@ -1,11 +1,12 @@
-import wxApi from "weixin-js-sdk"
+
+import wxApi = require("weixin-js-sdk")
+
+console.log(wxApi)
 
 export const wx = {
 
   showToast(opt) {
     alert(opt.title)
-    // wxApi.miniProgram
-    // wxApi.miniProgram.post
   },
 
   showModal(opt) {
