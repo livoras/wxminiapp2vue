@@ -1,4 +1,5 @@
 import 'vue2-touch-events'
+import "./wx"
 
 declare const Vue: any
 let app
@@ -6,6 +7,18 @@ let currentTemplate = ""
 let currentName = ""
 let pages = new Map<string, { template: string, page: any, wxs: any}>()
 let currentWxs = {}
+
+const App = (options) => {
+  const { onLaunch, globalData } = options
+  app = {
+    onLaunch: () => {
+      onLaunch()
+      for (const param in globalData) {
+        localStorage.setItem(param, globalData[param])
+      }
+    },
+  }
+}
 
 const registerPage = (name, template, page, wxs) => {
   console.log("Register page ->", name)
@@ -141,7 +154,13 @@ export const convertVueComponentProps = (props) => {
   }, {})
 }
 
+let isFirst = true
+
 export const routeTo = (url) => {
+  if (isFirst) {
+    app.onLaunch()
+    isFirst = false
+  }
   const urlObj = getQuery(url)
   const { template, page, wxs: rawWxs } = pages.get(urlObj.realUrl)
   document.getElementById("app").innerHTML = template
@@ -149,7 +168,7 @@ export const routeTo = (url) => {
   const wxs = parseWxs(rawWxs)
   const curPage = new Vue({
     el: "#app",
-    data: { ... page.data, ...wxs },
+    data: { ...page.data, ...wxs },
     methods,
     created: function() {
       if (this.onLoad) {
@@ -194,4 +213,4 @@ const getQuery = (url): { realUrl: string, queryObj: { [x: string]: any}} => {
     return { realUrl, queryObj }
   }
 
-export default { Page, getApp, Component, routeTo }
+export default { App, Page, getApp, Component, routeTo }
