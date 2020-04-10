@@ -9,14 +9,19 @@ let pages = new Map<string, { template: string, page: any, wxs: any}>()
 let currentWxs = {}
 
 const App = (options) => {
-  const { onLaunch, globalData } = options
-  app = {
-    onLaunch: () => {
-      onLaunch()
-      for (const param in globalData) {
-        localStorage.setItem(param, globalData[param])
+  if (!options) { 
+    app = {}
+    return
+  }
+  for (const key in options) {
+    const value = options[key]
+    if (key === "onLaunch") {
+      app[key] = () => {
+        value()
       }
-    },
+    } else {
+      app[key] = value
+    }
   }
 }
 
