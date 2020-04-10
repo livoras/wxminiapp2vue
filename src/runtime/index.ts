@@ -105,7 +105,7 @@ export const Component = (com) => {
   const caps = currentName.split('/')
   const cname = caps[caps.length - 1]
   console.log("------> Component", cname)
-  const props = converVueComponentProps(com.properties)
+  const props = convertVueComponentProps(com.properties)
   const wxs = currentWxs
   Vue.component(cname, {
     template: t,
@@ -130,7 +130,7 @@ export const Component = (com) => {
   })
 }
 
-export const converVueComponentProps = (props) => {
+export const convertVueComponentProps = (props) => {
   if (!props) { return {} }
   return Object.keys(props).reduce((o, key) => {
     const prop = props[key]

@@ -45,6 +45,14 @@ export const convertWxmlToVueTemplate = (wxmlString: string): IContext => {
   wxmlString = wxmlString.replace(/\<\s*([^\s\/\>]+)[^\>]+?\/\s*\>/g, (a, b) => {
     return a.replace(/\s*\/>/, '>') + `</${b}>`
   })
+  // wxmlString = wxmlString.replace(/\<\s*[^\s\/\>]+([^<>]*)\>/g, (a, b, ...args) => {
+  //   console.log(b)
+  //   b.replace(/[\s|\n]+([^=]*)=\s*"/g, (c, d, ...args2) => {
+  //     console.log("666", d)
+  //     return c
+  //   })
+  //   return a
+  // })
   // console.log(wxmlString, "--->")
   const ast = parse(wxmlString) as any
   const ctx = { lines: [], ngTemplateCounter: 0, template: "", wxs: [] }
@@ -167,6 +175,7 @@ const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
   } else if (n === "value") {
     const isHasDelimiters = checkIsHasDelimiters(attr.value)
     return isHasDelimiters ? `v-model="${v}"` : `value=${v}`
+    // TODO:
   } else if (n === "bindchange") {
     return `v-on:change="${v}"`
   } else if (replaceAttrList.has(n)) {
@@ -175,8 +184,13 @@ const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
     return `:${n}="${v}"`
   } else if (specialAttrList.has(n)) {
     return parseWxmlSpecialAttr(attr, node)
+  } else if (attr.name.indexOf("bind:") === 0) {
+    
   }
-  return attr.value ? `${attr.name}="${attr.value}"` : attr.name
+  if (attr.name === "productname") {
+    console.log(attr)
+  }
+  return attr.value ? `:${attr.name}="${stripDelimiters(attr.value)}"` : attr.name
 }
 
 const parseWxmlWxFor = (attr: Attribute, node: TreeNode) :string => {
@@ -254,8 +268,18 @@ const isElseOrIfElseNode = (node: TreeNode): boolean => {
 
 const toCamel = (str: string): string => {
   return str.split("-").map((item) => item.toLowerCase()).join("-").replace(/([^-])(?:-+([^-]))/g, function ($0, $1, $2) {
-    return $1 + $2.toUpperCase();
+    return $1 + $2.toUpperCase()
   })
+}
+
+const toKebab = (str: string): string => {
+  let result = str.replace(/[A-Z]/g, function ($0) {
+		return "-" + $0.toLowerCase()
+  })
+  if (result[0] === "-") {
+    result = result.slice(1);
+  }
+  return result
 }
 
 // console.log(convertWxmlToNgTemplate(html))
