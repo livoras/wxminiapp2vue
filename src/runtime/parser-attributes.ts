@@ -87,7 +87,7 @@ const tokenizer = (tagStr: string) => {
 
 export const parseAttributeName = (attr) => tokenizer(attr).filter((t) => (t.type === TOKEN_NAME.KEY)).map((t) => t.value)
 
-console.log(parseAttributeName(
-  `<div danm-good name="jerry" productName="{{ name }} = {{ titel }} 'xhit' danm-good='what?'" value>`
-))
+// console.log(parseAttributeName(
+//   `<div danm-good name="jerry" productName="{{ name }} = {{ titel }} 'xhit' danm-good='what?'" value>`
+// ))
 
