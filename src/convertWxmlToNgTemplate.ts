@@ -184,7 +184,7 @@ const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
   } else if (attr.name.indexOf("bind:") === 0) {
     const functionName = attr.name.replace("bind:", "")
     const dataSetList = getCurrentTargetDataSet(node)
-    return `@${functionName}="getComponentMethodEvent(${stripDelimiters(attr.value)}, { ${dataSetList.join(",")} }, $event)"`
+    return `@${functionName}="getComponentMethodEvent(${stripDelimiters(attr.value)}, $event, { ${dataSetList.join(",")} })"`
   }
   return attr.value ? `:${attr.name}="${stripDelimiters(attr.value)}"` : attr.name
 }

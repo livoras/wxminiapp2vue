@@ -2,7 +2,7 @@ import 'vue2-touch-events'
 import "./wx"
 
 declare const Vue: any
-let app
+let app: any = {}
 let currentTemplate = ""
 let currentName = ""
 let pages = new Map<string, { template: string, page: any, wxs: any}>()
@@ -45,8 +45,9 @@ const setData = function(obj, callback) {
   }
 }
 
-const triggerEvent = function() {
-  console.log("triggerEvent")
+const triggerEvent = function(name, e) {
+  console.log("triggerEvent", name, e)
+  this.$emit(name, e)
 }
 
 const getHandleMethodEvent = function(name: string, dataset: any) {
@@ -58,7 +59,10 @@ const getHandleMethodEvent = function(name: string, dataset: any) {
 }
 
 const getComponentMethodEvent = function(name: string, e, dataset) {
-  console.log(name, e, dataset)
+  this[name]({
+    detail: { value: e },
+    dataset: dataset,
+  })
 }
 
 const getInputReturn = function(name: string, key: string, dataset: any ,e: any) {
@@ -177,7 +181,7 @@ export const routeTo = (url) => {
   const urlObj = getQuery(url)
   const { template, page, wxs: rawWxs } = pages.get(urlObj.realUrl)
   document.getElementById("app").innerHTML = template
-  const methods = Object.assign(extractMethods(page), { setData, getHandleMethodEvent, getInputReturn })
+  const methods = Object.assign(extractMethods(page), { setData, getHandleMethodEvent, getInputReturn, getComponentMethodEvent })
   const wxs = parseWxs(rawWxs)
   const curPage = new Vue({
     el: "#app",
