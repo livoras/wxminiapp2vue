@@ -45,6 +45,10 @@ const setData = function(obj, callback) {
   }
 }
 
+const triggerEvent = function() {
+  console.log("triggerEvent")
+}
+
 const getHandleMethodEvent = function(name: string, dataset: any) {
   const that = this
   return function(e, ...args) {
@@ -132,7 +136,7 @@ export const Component = (com) => {
   Vue.component(cname, {
     template: t,
     props,
-    methods: Object.assign(com.methods || {}, { setData, getHandleMethodEvent, getInputReturn, getComponentMethodEvent }),
+    methods: Object.assign(com.methods || {}, { setData, triggerEvent, getHandleMethodEvent, getInputReturn, getComponentMethodEvent }),
     /** TODO:
      * 1. 合并生命周期
      * 2. v-bind 语法：在 2vue 的项目中改
