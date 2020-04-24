@@ -199,7 +199,8 @@ const parseWxmlInput = (attr: Attribute, node: TreeNode): string => {
   const v = stripDelimiters(attr.value)
   const n = attr.name
   const attrsMap = node.attrsMap
-  const inputKey = attrsMap.get("value").value
+  const valueAttr = attrsMap.get("value")
+  const inputKey = valueAttr ? valueAttr.value : ""
   const type = n.replace(/(bind)(:?)/g, '')
   const realKey = checkIsHasDelimiters(inputKey) && type === 'input' ? stripDelimiters(inputKey) : ""
   const dataSetList = getCurrentTargetDataSet(node)
