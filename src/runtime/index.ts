@@ -2,21 +2,26 @@ import 'vue2-touch-events'
 import "./wx"
 
 declare const Vue: any
-let app
+let app: any = {}
 let currentTemplate = ""
 let currentName = ""
 let pages = new Map<string, { template: string, page: any, wxs: any}>()
 let currentWxs = {}
 
 const App = (options) => {
-  const { onLaunch, globalData } = options
-  app = {
-    onLaunch: () => {
-      onLaunch()
-      for (const param in globalData) {
-        localStorage.setItem(param, globalData[param])
+  if (!options) { 
+    app = {}
+    return
+  }
+  for (const key in options) {
+    const value = options[key]
+    if (key === "onLaunch") {
+      app[key] = () => {
+        value()
       }
-    },
+    } else {
+      app[key] = value
+    }
   }
 }
 
@@ -40,12 +45,24 @@ const setData = function(obj, callback) {
   }
 }
 
+const triggerEvent = function(name, e) {
+  console.log("triggerEvent", name, e)
+  this.$emit(name, e)
+}
+
 const getHandleMethodEvent = function(name: string, dataset: any) {
   const that = this
   return function(e, ...args) {
     e.dataset = dataset
     that[name](e, ...args)
   }
+}
+
+const getComponentMethodEvent = function(name: string, e, dataset) {
+  this[name]({
+    detail: { value: e },
+    dataset: dataset,
+  })
 }
 
 const getInputReturn = function(name: string, key: string, dataset: any ,e: any) {
@@ -118,12 +135,12 @@ export const Component = (com) => {
   const caps = currentName.split('/')
   const cname = caps[caps.length - 1]
   console.log("------> Component", cname)
-  const props = converVueComponentProps(com.properties)
+  const props = convertVueComponentProps(com.properties)
   const wxs = currentWxs
   Vue.component(cname, {
     template: t,
     props,
-    methods: Object.assign(com.methods || {}, { setData, getHandleMethodEvent, getInputReturn }),
+    methods: Object.assign(com.methods || {}, { setData, triggerEvent, getHandleMethodEvent, getInputReturn, getComponentMethodEvent }),
     /** TODO:
      * 1. 合并生命周期
      * 2. v-bind 语法：在 2vue 的项目中改
@@ -143,7 +160,7 @@ export const Component = (com) => {
   })
 }
 
-export const converVueComponentProps = (props) => {
+export const convertVueComponentProps = (props) => {
   if (!props) { return {} }
   return Object.keys(props).reduce((o, key) => {
     const prop = props[key]
@@ -164,7 +181,7 @@ export const routeTo = (url) => {
   const urlObj = getQuery(url)
   const { template, page, wxs: rawWxs } = pages.get(urlObj.realUrl)
   document.getElementById("app").innerHTML = template
-  const methods = Object.assign(extractMethods(page), { setData, getHandleMethodEvent, getInputReturn })
+  const methods = Object.assign(extractMethods(page), { setData, getHandleMethodEvent, getInputReturn, getComponentMethodEvent })
   const wxs = parseWxs(rawWxs)
   const curPage = new Vue({
     el: "#app",

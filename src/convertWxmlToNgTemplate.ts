@@ -1,6 +1,6 @@
 import { parse, DefaultTreeDocument, DefaultTreeTextNode, DefaultTreeElement, DefaultTreeNode, Attribute } from "parse5"
 import { TAGS_MAP } from "./constants"
-
+import { replaceCamelAttribute } from "./runtime/parser-attributes"
 interface TreeNode extends DefaultTreeElement {
   attrsMap: Map<string, Attribute>,
   isIf: boolean,
@@ -45,7 +45,12 @@ export const convertWxmlToVueTemplate = (wxmlString: string): IContext => {
   wxmlString = wxmlString.replace(/\<\s*([^\s\/\>]+)[^\>]+?\/\s*\>/g, (a, b) => {
     return a.replace(/\s*\/>/, '>') + `</${b}>`
   })
-  // console.log(wxmlString, "--->")
+  wxmlString = wxmlString.replace(/\<\s*[^\s\/\>]+([^<>]*)\>/g, (a, b) => {
+    return b.length && /[A-Z]/g.test(b) ? replaceCamelAttribute(a) : a
+  })
+  // if (wxmlString.indexOf("product-name") > 0) {
+  //   console.log("<--- start", wxmlString, "end --->")
+  // }
   const ast = parse(wxmlString) as any
   const ctx = { lines: [], ngTemplateCounter: 0, template: "", wxs: [] }
   const htmlNode = getHtmlNode(ast)
@@ -167,6 +172,7 @@ const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
   } else if (n === "value") {
     const isHasDelimiters = checkIsHasDelimiters(attr.value)
     return isHasDelimiters ? `v-model="${v}"` : `value=${v}`
+    // TODO:
   } else if (n === "bindchange") {
     return `v-on:change="${v}"`
   } else if (replaceAttrList.has(n)) {
@@ -175,8 +181,12 @@ const parseWxmlAttrToVueAttrStr = (attr: Attribute, node: TreeNode): string => {
     return `:${n}="${v}"`
   } else if (specialAttrList.has(n)) {
     return parseWxmlSpecialAttr(attr, node)
+  } else if (attr.name.indexOf("bind:") === 0) {
+    const functionName = attr.name.replace("bind:", "")
+    const dataSetList = getCurrentTargetDataSet(node)
+    return `@${functionName}="getComponentMethodEvent(${stripDelimiters(attr.value)}, $event, { ${dataSetList.join(",")} })"`
   }
-  return attr.value ? `${attr.name}="${attr.value}"` : attr.name
+  return attr.value ? `:${attr.name}="${stripDelimiters(attr.value)}"` : attr.name
 }
 
 const parseWxmlWxFor = (attr: Attribute, node: TreeNode) :string => {
@@ -255,8 +265,20 @@ const isElseOrIfElseNode = (node: TreeNode): boolean => {
 
 const toCamel = (str: string): string => {
   return str.split("-").map((item) => item.toLowerCase()).join("-").replace(/([^-])(?:-+([^-]))/g, function ($0, $1, $2) {
-    return $1 + $2.toUpperCase();
+    return $1 + $2.toUpperCase()
   })
 }
 
+const toKebab = (str: string): string => {
+  let result = str.replace(/[A-Z]/g, function ($0) {
+		return "-" + $0.toLowerCase()
+  })
+  if (result[0] === "-") {
+    result = result.slice(1);
+  }
+  return result
+}
+
 // console.log(convertWxmlToNgTemplate(html))
+
+// console.log(replaceCamelAttribute(`<button class="button" bindtap="handleTapButton">`))

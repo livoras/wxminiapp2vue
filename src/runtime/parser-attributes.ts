@@ -59,7 +59,7 @@ const tokenizer = (tagStr: string) => {
 
       if (ch === '>') {
         addKeyToken()
-        tokens.push({ type: TOKEN_NAME.VALUE, value: ch })
+        tokens.push({ type: TOKEN_NAME.END_TAG, value: ch })
         token = ""
         continue
       }
@@ -85,9 +85,29 @@ const tokenizer = (tagStr: string) => {
   return tokens
 }
 
-export const parseAttributeName = (attr) => tokenizer(attr).filter((t) => (t.type === TOKEN_NAME.KEY)).map((t) => t.value)
+// export const parseAttributeName = (attr) => tokenizer(attr).filter((t) => (t.type === TOKEN_NAME.KEY)).map((t) => t.value)
 
-// console.log(parseAttributeName(
-//   `<div danm-good name="jerry" productName="{{ name }} = {{ titel }} 'xhit' danm-good='what?'" value>`
-// ))
+export const replaceCamelAttribute = (tag): string => {
+  let res = ""
+  const list = tokenizer(tag)
+  list.forEach((token, index) => {
+    const value = token.type === TOKEN_NAME.KEY ? toKebab(token.value) : token.value
+    const nextTokenType = list[index + 1] ? list[index + 1].type : undefined
+    const between = token.type === TOKEN_NAME.START_TAG || token.type === TOKEN_NAME.END_TAG
+    || token.type === TOKEN_NAME.EQUAL || nextTokenType === TOKEN_NAME.EQUAL || nextTokenType === TOKEN_NAME.END_TAG
+      ? "" : " "
+    res = res + value + between
+  })
+  return res
+}
+
+const toKebab = (str: string): string => {
+  let result = str.replace(/[A-Z]/g, function ($0) {
+		return "-" + $0.toLowerCase()
+  })
+  if (result[0] === "-") {
+    result = result.slice(1);
+  }
+  return result
+}
 
