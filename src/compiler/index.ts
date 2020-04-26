@@ -1,5 +1,6 @@
 const path = require("path")
 const fs = require("fs")
+const webpack = require("webpack")
 import { convertWxmlToVueTemplate } from "../convertWxmlToNgTemplate"
 
 const d = path.resolve(process.cwd())
@@ -57,7 +58,7 @@ window.wxs = {
 }`;
 
   const gen = ([name, c]: [string, PageComponent]) => {
-    console.log('===>', c.path)
+    // console.log('===>', c.path)
     const p = path.join("dist/styles", c.path)
     const dir = path.dirname(p)
     fs.mkdirSync(dir, { recursive: true })
@@ -231,21 +232,34 @@ class MiniAppInfo {
   parseWxs(rawWxs: any, absPath: string) {
     if (rawWxs.attrsMap.has("src")) {
       const src = rawWxs.attrsMap.get("src")
-      const wxsPath = path.resolve(path.join(path.dirname(absPath), src.value))
-      const rWxsPath = this.replaceDirname(wxsPath)
-
-      if (!this.wxs.has(rWxsPath)) {
-        this.wxs.set(rWxsPath, { js: fs.readFileSync(wxsPath, "utf-8") })
-      }
-
-      return { id: rWxsPath, }
+      this.parseWxsWithPath(absPath, src.value)
     } else {
       return { js: rawWxs.childNodes[0].value, }
     }
   }
 
+  parseWxsWithPath(absPath: string, p: string): void {
+    const wxsPath = path.resolve(path.join(path.dirname(absPath), p))
+    const rWxsPath = this.replaceDirname(wxsPath)
+    if (!this.wxs.has(rWxsPath)) {
+      let jscontent = fs.readFileSync(wxsPath, "utf-8")
+      jscontent = this.parseRequireWxs(wxsPath, jscontent)
+      this.wxs.set(rWxsPath, { js: jscontent })
+    }
+  }
+
   replaceDirname(p: string) {
     return p.replace(this.root, "").replace(/^[\/\\]/g, "")
+  }
+
+  parseRequireWxs(wxsPath: string, content: string): string {
+    content = content.replace(/require\(['"]([\s\S]+?)['"]\)/g, (a: string, b: string): string => {
+      // console.log(wxsPath)
+      this.parseWxsWithPath(wxsPath, b)
+      const wxsName = this.replaceDirname(wxsPath)
+      return `getWxsByPath("${wxsName}")`
+    })
+    return content
   }
 }
 
@@ -255,6 +269,7 @@ const main = () => {
     p = path.resolve(path.join(process.cwd(), p))
   }
   compile(p)
+  makeBundle(p)
 }
 
 const compile = (p: string): void => {
@@ -263,6 +278,58 @@ const compile = (p: string): void => {
   miniApp.root = p
   miniApp.parseByAppJson(appJson)
   genMiniJS(miniApp)
+}
+
+const makeBundle = (p: string): void => {
+  console.log(path.join(p, "miniapp.js"))
+  webpack({
+    entry: {
+      // h5: "./h5.js",
+      // app: "./app.js",
+      // page: "./pages/index/index.js",
+      miniapp: path.join(p, "miniapp.js"),
+    },
+    resolve: {
+      modules: [p, 'node_modules'],
+      alias: {
+        'wxminiapp2vue': path.resolve(path.join(__dirname, '../../dist/index.js'))
+      }
+    },
+    optimization: {
+      // minimize: false,
+      splitChunks: {
+        cacheGroups: {
+          commons: {
+            name: "commons",
+            chunks: "initial",
+            minChunks: 2,
+            minSize: 0
+          }
+        }
+      },
+      chunkIds: "named" // To keep filename consistent between different modes (for example building only)
+    },
+    module: {
+      rules: [
+        {
+          test: /\.tsx?$/,
+          use: 'ts-loader',
+          exclude: /node_modules/,
+        },
+      ],
+    },
+    output: {
+      // filename: 'main.js',
+      path: path.resolve(p, 'dist'),
+    },
+  }, (err: Error, stats: any) => {
+    if (err) { throw err }
+    const errors = stats.compilation.errors
+    console.log(errors.length, "===>")
+    for (const er of errors) {
+      console.log(er, "===>")
+    }
+  })
 }
 
 main()

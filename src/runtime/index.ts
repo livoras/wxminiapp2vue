@@ -201,6 +201,10 @@ export const routeTo = (url) => {
   })
 }
 
+export const getWxsByPath = (wxsPath: string): any => {
+  return ((window as any).wxs[wxsPath])
+}
+
 const parseWxs = (rawWxs) => {
   const wxs = Object.keys(rawWxs).reduce((w, key) => {
     const xs = rawWxs[key]
