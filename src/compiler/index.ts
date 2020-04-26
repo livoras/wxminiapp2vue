@@ -284,9 +284,8 @@ const makeBundle = (p: string): void => {
   console.log(path.join(p, "miniapp.js"))
   webpack({
     entry: {
-      // h5: "./h5.js",
-      // app: "./app.js",
-      // page: "./pages/index/index.js",
+      h5: path.resolve(path.join(__dirname, '../../dist/compiler/h5.js')),
+      app: path.join(p, "app.js"),
       miniapp: path.join(p, "miniapp.js"),
     },
     resolve: {
@@ -296,7 +295,8 @@ const makeBundle = (p: string): void => {
       }
     },
     optimization: {
-      // minimize: false,
+      /* disable minimize */
+      minimize: false,
       splitChunks: {
         cacheGroups: {
           commons: {
