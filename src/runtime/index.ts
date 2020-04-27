@@ -156,6 +156,31 @@ export const Component = (com) => {
         return {...com.data, ...parseWxs(wxs)}
       }
       return {}
+    },
+    created: function() {
+      if (com.created) {
+        com.created()
+      }
+    },
+    beforeMount: function() {
+      if (com.attached) {
+        com.attached()
+      }
+    },
+    mounted: function() {
+      if (com.ready) {
+        com.ready()
+      }
+    },
+    updated: function() {
+      if (com.moved) {
+        com.moved()
+      }
+    },
+    destroyed: function() {
+      if (com.destroyed) {
+        com.destroyed()
+      }
     }
   })
 }
@@ -193,6 +218,16 @@ export const routeTo = (url) => {
       }
       if (this.onShow) {
         this.onShow()
+      }
+    },
+    mounted: function() {
+      if (this.onReady) {
+        this.onReady()
+      }
+    },
+    destroyed: function() {
+      if (this.onUnload) {
+        this.onUnload()
       }
     }
   })
