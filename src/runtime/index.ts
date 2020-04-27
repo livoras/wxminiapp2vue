@@ -234,4 +234,4 @@ const getQuery = (url): { realUrl: string, queryObj: { [x: string]: any}} => {
     return { realUrl, queryObj }
   }
 
-export default { App, Page, getApp, Component, routeTo }
+export default { App, Page, getApp, Component, routeTo, getWxsByPath }

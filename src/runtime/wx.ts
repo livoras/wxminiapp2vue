@@ -1,7 +1,7 @@
 
 import wxApi = require("weixin-js-sdk")
 
-console.log(wxApi)
+const axios = require('axios');
 
 export const wx = {
 
@@ -86,6 +86,68 @@ export const wx = {
   redirectTo: (opt) => {
     wxApi.miniProgram.redirectTo(opt)
   },
+
+  canIUse: (functionName) => {
+    if (this[functionName]) {
+      return true
+    }
+    return false
+  },
+
+  getSystemInfoSync: () => {
+    return {
+      SDKVersion: "2.10.4",
+      batteryLevel: 100,
+      benchmarkLevel: 1,
+      brand: "devtools",
+      devicePixelRatio: 3,
+      fontSizeSetting: 16,
+      language: "zh",
+      model: "iPhone X",
+      pixelRatio: 3,
+      platform: "devtools",
+      safeArea: {
+        bottom: 812,
+        height: 768,
+        left: 0,
+        right: 375,
+        top: 44,
+        width: 375,
+      },
+      screenHeight: 812,
+      screenWidth: 375,
+      statusBarHeight: 44,
+      system: "iOS 10.0.1",
+      version: "7.0.4",
+      windowHeight: 812,
+      windowWidth: 375,
+    }
+  },
+
+  request: (options) => {
+    const { url, method, header, data, success, fail } = options
+    axios({
+      url, method, data,
+      headers: {
+        ...header,
+        Authorization: "eyJhbGciOiJIUzI1NiJ9.eyJ1aWQiOjExMCwiZXhwIjoxNTg4MzAyNjc5fQ.pj61S9LA8ASDYxYBaApT6nx8bLNPeRe8p228h2BfTHc",
+      },
+      baseURL: process.env.NODE_ENV === "dev"
+        ? "http://mina.test.office.qunjielong.com/"
+        : "https://apipro.qunjielong.com/",
+    })
+      .then((res) => {
+        const { data, status, headers } = res
+        success({
+          data,
+          statusCode: status,
+          header: headers,
+        })
+      })
+      .catch((err) => {
+        fail(err.response || {})
+      })
+  }
 }
 
 const operateStorage = function (opt, fuc) {
