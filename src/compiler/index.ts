@@ -257,7 +257,7 @@ class MiniAppInfo {
       // console.log(wxsPath)
       this.parseWxsWithPath(wxsPath, b)
       const wxsName = this.replaceDirname(wxsPath)
-      return `getWxsByPath("${wxsName}")`
+      return `getWxsByPath("${wxsName.replace(/\\/g, "/")}")`
     })
     return content
   }
