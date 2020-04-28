@@ -48,16 +48,27 @@ const ngc = require("wxminiapp2vue");
 require('./app.js')
 
 window.wxs = {}
+`;
+[...miniApp.wxs.entries()].forEach(([key, value]) => {
+  jsStr += `
+window.wxs["${key.replace(/\\/g, '/')}"] = (function() {
+  const module = { exports: {} };
+  ${value.js};
+  return module.exports;
+})(),\n
+`
+})
 
-window.wxs = {
-  ${[...miniApp.wxs.entries()].reduce((s, [key, value]) => {
-    return s + `"${key.replace(/\\/g, '/')}": (function() {
-      const module = { exports: {} };
-      ${value.js};
-      return module.exports;
-    })(),\n`
-  }, '')}
-}`;
+// `
+// window.wxs = {
+//   ${[...miniApp.wxs.entries()].reduce((s, [key, value]) => {
+//     return s + `"${key.replace(/\\/g, '/')}": (function() {
+//       const module = { exports: {} };
+//       ${value.js};
+//       return module.exports;
+//     })(),\n`
+//   }, '')}
+// }`;
 
   const gen = ([name, c]: [string, PageComponent]) => {
     // console.log('===>', c.path)
@@ -251,16 +262,16 @@ class MiniAppInfo {
   }
 
   replaceDirname(p: string) {
-    console.log(this.root)
     return p.replace(this.root, "").replace(/^[\/\\]/g, "")
   }
 
   parseRequireWxs(wxsPath: string, content: string): string {
     content = content.replace(/require\(['"]([\s\S]+?)['"]\)/g, (a: string, b: string): string => {
-      console.log(wxsPath, a, b)
+      // console.log(wxsPath, a, b)
       this.parseWxsWithPath(wxsPath, b)
-      const wxsName = this.replaceDirname(wxsPath)
-      console.log("wxsName", wxsName)
+      // const wxsName = this.replaceDirname(wxsPath)
+      const wxsName = this.replaceDirname(path.resolve(path.dirname(wxsPath), b))
+      // console.log("wxsName", wxsName) 
       return `getWxsByPath("${wxsName.replace(/\\/g, "/")}")`
     })
     return content
