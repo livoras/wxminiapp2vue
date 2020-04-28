@@ -55,7 +55,7 @@ window.wxs["${key.replace(/\\/g, '/')}"] = (function() {
   const module = { exports: {} };
   ${value.js};
   return module.exports;
-})(),\n
+})()\n
 `
 })
 
