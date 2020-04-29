@@ -3,6 +3,34 @@ import wxApi = require("weixin-js-sdk")
 
 const axios = require('axios');
 
+const systemInfo = {
+  SDKVersion: "2.10.4",
+  batteryLevel: 100,
+  benchmarkLevel: 1,
+  brand: "devtools",
+  devicePixelRatio: 3,
+  fontSizeSetting: 16,
+  language: "zh",
+  model: "iPhone X",
+  pixelRatio: 3,
+  platform: "devtools",
+  safeArea: {
+    bottom: 812,
+    height: 768,
+    left: 0,
+    right: 375,
+    top: 44,
+    width: 375,
+  },
+  screenHeight: 812,
+  screenWidth: 375,
+  statusBarHeight: 44,
+  system: "iOS 10.0.1",
+  version: "7.0.4",
+  windowHeight: 812,
+  windowWidth: 375,
+}
+
 export const wx = {
 
   showToast(opt) {
@@ -40,7 +68,7 @@ export const wx = {
         resolve({ errMsg: "" })
       }
     })
-    operateStorage(opt, getStorage)
+    execPromise(opt, getStorage)
   },
 
   setStorage: (opt) => {
@@ -54,7 +82,7 @@ export const wx = {
         resolve({ errMsg: "" })
       }
     })
-    operateStorage(opt, setStorage)
+    execPromise(opt, setStorage)
   },
 
   removeStorage: (opt) => {
@@ -68,7 +96,7 @@ export const wx = {
         resolve({ errMsg: "" })
       }
     })
-    operateStorage(opt, removeStorage)
+    execPromise(opt, removeStorage)
   },
 
   navigateTo: (opt) => {
@@ -95,33 +123,20 @@ export const wx = {
   },
 
   getSystemInfoSync: () => {
-    return {
-      SDKVersion: "2.10.4",
-      batteryLevel: 100,
-      benchmarkLevel: 1,
-      brand: "devtools",
-      devicePixelRatio: 3,
-      fontSizeSetting: 16,
-      language: "zh",
-      model: "iPhone X",
-      pixelRatio: 3,
-      platform: "devtools",
-      safeArea: {
-        bottom: 812,
-        height: 768,
-        left: 0,
-        right: 375,
-        top: 44,
-        width: 375,
-      },
-      screenHeight: 812,
-      screenWidth: 375,
-      statusBarHeight: 44,
-      system: "iOS 10.0.1",
-      version: "7.0.4",
-      windowHeight: 812,
-      windowWidth: 375,
-    }
+    return systemInfo
+  },
+
+  getSystemInfo: (options) => {
+    const getSystemInfo = new Promise((resolve, reject) => {
+      try {
+        resolve(systemInfo)
+      } catch (e) {
+        reject({ errMsg: e })
+      } finally {
+        resolve({ errMsg: "" })
+      }
+    })
+    execPromise(options, getSystemInfo)
   },
 
   request: (options) => {
@@ -150,7 +165,12 @@ export const wx = {
   }
 }
 
-const operateStorage = function (opt, fuc) {
+/**
+ * 执行异步方法
+ * @param opt 传入的方法参数
+ * @param fuc 执行的promise方法
+ */
+const execPromise = function (opt, fuc) {
   const sucCallback = opt.success
   const failCallback = opt.fail
   const completeCallback = opt.complete

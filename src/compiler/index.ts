@@ -278,6 +278,11 @@ class MiniAppInfo {
   }
 }
 
+const genHtml = () => {
+  const html = fs.readFileSync(path.resolve(__dirname, "miniapp.html"), "utf-8")
+  fs.writeFileSync("./miniapp.html", html, "utf-8")
+}
+
 const main = () => {
   let p = process.argv[2]
   if (!path.isAbsolute(p)) {
@@ -293,10 +298,11 @@ const compile = (p: string): void => {
   miniApp.root = p
   miniApp.parseByAppJson(appJson)
   genMiniJS(miniApp)
+  genHtml()
 }
 
 const makeBundle = (p: string): void => {
-  console.log(path.join(p, "miniapp.js"))
+  // console.log(path.join(p, "miniapp.js"))
   webpack({
     entry: {
       h5: path.resolve(path.join(__dirname, '../../dist/compiler/h5.js')),

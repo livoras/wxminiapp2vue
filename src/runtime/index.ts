@@ -8,7 +8,19 @@ let currentName = ""
 let pages = new Map<string, { template: string, page: any, wxs: any}>()
 let currentWxs = {}
 
+const getUrlQuery = () => {
+  const url = window.location.href
+  if (!url) { return }
+  const querys = url.split("?")[1]
+  if (!querys) { return }
+  querys.split["&"].forEach((param) => {
+    const [key, value] = param.split("=")
+    wx.setStorage(key, value)
+  }, {})
+}
+
 const App = (options) => {
+  getUrlQuery()
   if (!options) { 
     app = {}
     return
@@ -17,7 +29,7 @@ const App = (options) => {
     const value = options[key]
     if (key === "onLaunch") {
       app[key] = () => {
-        value()
+        value({ scene: 1001 })
       }
     } else {
       app[key] = value
@@ -26,7 +38,7 @@ const App = (options) => {
 }
 
 const registerPage = (name, template, page, wxs) => {
-  console.log("Register page ->", name)
+  // console.log("Register page ->", name)
   pages.set(name, {
     template, page, wxs,
   })
@@ -46,7 +58,7 @@ const setData = function(obj, callback) {
 }
 
 const triggerEvent = function(name, e) {
-  console.log("triggerEvent", name, e)
+  // console.log("triggerEvent", name, e)
   this.$emit(name, e)
 }
 
@@ -78,13 +90,20 @@ const Page = (page) => {
   registerPage(currentName, currentTemplate, page, currentWxs)
 }
 
-const extractMethods = (obj) => {
-  return Object.keys(obj).reduce((o, key) => {
+const extractMethodsAndProps = (obj, result = [{}, {}]) => {
+  const methodsAndProps = Object.keys(obj).reduce(([o, p], key) => {
     if (typeof obj[key] === 'function') {
       o[key] = wrapEventFunc(obj[key])
+    } else {
+      p[key] = obj[key]
     }
-    return o
-  }, {})
+    return [o, p]
+  }, result)
+  if (!obj || !obj.__proto__) {
+    return methodsAndProps
+  } else {
+    return extractMethodsAndProps(obj.__proto__, methodsAndProps)
+  }
 }
 
 
@@ -134,7 +153,7 @@ export const Component = (com) => {
   const t = currentTemplate
   const caps = currentName.split('/')
   const cname = caps[caps.length - 1]
-  console.log("------> Component", cname)
+  // console.log("------> Component", cname)
   const props = convertVueComponentProps(com.properties)
   const wxs = currentWxs
   Vue.component(cname, {
@@ -206,13 +225,15 @@ export const routeTo = (url) => {
   const urlObj = getQuery(url)
   const { template, page, wxs: rawWxs } = pages.get(urlObj.realUrl)
   document.getElementById("app").innerHTML = template
-  const methods = Object.assign(extractMethods(page), { setData, getHandleMethodEvent, getInputReturn, getComponentMethodEvent })
+  const [pageMethods, props] = extractMethodsAndProps(page)
+  const methods = Object.assign(pageMethods, { setData, getHandleMethodEvent, getInputReturn, getComponentMethodEvent })
   const wxs = parseWxs(rawWxs)
   const curPage = new Vue({
     el: "#app",
     data: { ...page.data, ...wxs },
     methods,
     created: function() {
+      Object.assign(this, props)
       if (this.onLoad) {
         this.onLoad(urlObj.queryObj)
       }
@@ -269,4 +290,24 @@ const getQuery = (url): { realUrl: string, queryObj: { [x: string]: any}} => {
     return { realUrl, queryObj }
   }
 
-export default { App, Page, getApp, Component, routeTo, getWxsByPath }
+const getRegExp = (regRule: string, decorator?: string) => {
+  return decorator
+    ? new RegExp(regRule, decorator)
+    : new RegExp(regRule)
+}
+
+const Behavior = (params) => {}
+
+const getCurrentPages = () => {
+  const pages = localStorage.getItem("pages")
+  if (pages) {
+    return JSON.parse(pages)
+  } else {
+    return [{
+      options: {},
+      route: "",
+    }]
+  }
+}
+
+export default { App, Page, getApp, Component, routeTo, getWxsByPath, getRegExp, Behavior, getCurrentPages }
