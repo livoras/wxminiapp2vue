@@ -4,6 +4,7 @@ const webpack = require("webpack")
 import { convertWxmlToVueTemplate } from "../convertWxmlToNgTemplate"
 
 const d = path.resolve(process.cwd())
+let cwd = ""
 
 const suid = () => {
   // I generate the UID from two parts here 
@@ -99,7 +100,7 @@ window.wxs["${key.replace(/\\/g, '/')}"] = (function() {
   for (const cc of miniApp.pages) {
     gen(cc)
   }
-  fs.writeFileSync("./miniapp.js", jsStr, "utf-8")
+  fs.writeFileSync(path.join(cwd, "miniapp.js"), jsStr, "utf-8")
 }
 
 class PageComponent {
@@ -245,13 +246,14 @@ class MiniAppInfo {
   parseWxs(rawWxs: any, absPath: string) {
     if (rawWxs.attrsMap.has("src")) {
       const src = rawWxs.attrsMap.get("src")
-      this.parseWxsWithPath(absPath, src.value)
+      const rWxsPath = this.parseWxsWithPath(absPath, src.value)
+      return { id: rWxsPath, }
     } else {
       return { js: rawWxs.childNodes[0].value, }
     }
   }
 
-  parseWxsWithPath(absPath: string, p: string): void {
+  parseWxsWithPath(absPath: string, p: string): string {
     const wxsPath = path.resolve(path.join(path.dirname(absPath), p))
     const rWxsPath = this.replaceDirname(wxsPath)
     if (!this.wxs.has(rWxsPath)) {
@@ -259,6 +261,7 @@ class MiniAppInfo {
       jscontent = this.parseRequireWxs(wxsPath, jscontent)
       this.wxs.set(rWxsPath, { js: jscontent })
     }
+    return rWxsPath
   }
 
   replaceDirname(p: string) {
@@ -283,11 +286,16 @@ const genHtml = () => {
   fs.writeFileSync("./miniapp.html", html, "utf-8")
 }
 
+const copyVueMinJS = () => {
+  fs.copyFileSync(path.resolve(path.join(__dirname, '../vendors/vue.min.js')), path.join(cwd, "dist/vue.min.js"))
+}
+
 const main = () => {
   let p = process.argv[2]
   if (!path.isAbsolute(p)) {
     p = path.resolve(path.join(process.cwd(), p))
   }
+  cwd = p
   compile(p)
   makeBundle(p)
 }
@@ -299,6 +307,7 @@ const compile = (p: string): void => {
   miniApp.parseByAppJson(appJson)
   genMiniJS(miniApp)
   genHtml()
+  copyVueMinJS()
 }
 
 const makeBundle = (p: string): void => {
