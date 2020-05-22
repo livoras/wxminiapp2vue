@@ -13,14 +13,14 @@ const getUrlQuery = () => {
   if (!url) { return }
   const querys = url.split("?")[1]
   if (!querys) { return }
-  querys.split["&"].forEach((param) => {
+  querys.split("&").forEach((param) => {
     const [key, value] = param.split("=")
     wx.setStorage(key, value)
   }, {})
 }
 
 const App = (options) => {
-  getUrlQuery()
+  setTimeout(getUrlQuery)
   if (!options) { 
     app = {}
     return

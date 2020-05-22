@@ -147,20 +147,26 @@ export const wx = {
         ...header,
         Authorization: "eyJhbGciOiJIUzI1NiJ9.eyJ1aWQiOjExMCwiZXhwIjoxNTg4MzAyNjc5fQ.pj61S9LA8ASDYxYBaApT6nx8bLNPeRe8p228h2BfTHc",
       },
-      baseURL: process.env.NODE_ENV === "dev"
-        ? "http://mina.test.office.qunjielong.com/"
-        : "https://apipro.qunjielong.com/",
+      // baseURL: url.startsWith("http")
+      //   ? process.env.NODE_ENV === "dev"
+      //     ? "http://mina.test.office.qunjielong.com/"
+      //     : "https://apipro.qunjielong.com/"
+      //   : "",
     })
       .then((res) => {
         const { data, status, headers } = res
-        success({
-          data,
-          statusCode: status,
-          header: headers,
-        })
+        if (success) {
+          success({
+            data,
+            statusCode: status,
+            header: headers,
+          })
+        }
       })
       .catch((err) => {
-        fail(err.response || {})
+        if (fail) {
+          fail(err.response || {})
+        }
       })
   }
 }
