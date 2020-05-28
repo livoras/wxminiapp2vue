@@ -26,7 +26,7 @@ var server = http.createServer(function(req, res) {
   proxy.web(req, res, {
     target: isFile
       ? "http://localhost:8081"
-      : "http://localhost:8080",
+      : "http://101.132.168.128:8081",
   });
 
   proxy.on("error", (err) => {
