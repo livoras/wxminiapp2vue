@@ -3,4 +3,5 @@ export const TAGS_MAP = {
   "text": "span",
   "image": "img",
   "block": "ng-template",
+  "checkbox": "input",
 }
